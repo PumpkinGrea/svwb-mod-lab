@@ -1,0 +1,50 @@
+# Python generated files
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.venv/
+venv/
+
+# Game copies, downloaded data, proprietary tools and generated exports
+/cache-copy/
+/card-probe/
+/official-manifests/
+/master-data/
+/audio-export/
+/independent-export/
+/other-export/
+/input/
+/tools/
+
+# Locally recovered parameters and private configuration
+/local-keys/
+.env
+.env.*
+!.env.example
+*.local.toml
+
+# Other generated/binary artifacts
+*.log
+*.tmp
+*.etl
+*.zip
+*.7z
+*.exe
+*.dll
+*.pck
+*.wem
+*.wav
+*.mp3
+*.silk
+*.ab
+*.manifest
+*.bytes
+*.bin
+
+# Editor / operating-system files
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
