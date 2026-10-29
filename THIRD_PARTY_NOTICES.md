@@ -5,8 +5,9 @@ The parsing, decryption and mapping implementations in this project reference
 the MIT License. Its copyright and permission notice are reproduced below.
 Source-module links and other tool references are provided in README.md.
 
-This notice does not grant rights to game assets. Game files, recovered local
-parameters and third-party executables are not included in this repository.
+This notice does not grant rights to game assets. Game files, extracted database parameters and third-party unpacker
+executables are not included in this repository. Release binaries include
+the resource-format base parameter required for artwork decoding.
 Separately installed dependencies remain subject to their own licenses.
 
 ## wbunpacker — MIT License
@@ -30,3 +31,24 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+
+## ProjectPrefs format reference
+
+The disk ProjectPrefs decoder references the technical explanation at
+https://linux.do/t/topic/1737538 . The asset traversal, bounded parser and
+validation code are implemented in this project. This citation does not
+attribute an MIT license to that article.
+
+## Bundled runtime libraries
+
+Release packages keep PySide6/Qt DLLs separate in `_internal/`; compatible
+replacement libraries may be used. Reverse engineering to debug modifications
+to LGPL-covered components is permitted. LGPLv3 and GPLv3 license texts are
+included in `third_party/licenses/` and in the release dependency notices.
+The package includes Python's runtime license and installed dependency notices.
+
+Corresponding unmodified upstream sources for the pinned Qt/PySide6 version:
+https://download.qt.io/official_releases/QtForPython/pyside6/PySide6-6.12.0-src/
+https://download.qt.io/official_releases/qt/6.12/6.12.0/single/
+https://code.qt.io/cgit/pyside/pyside-setup.git/
+https://code.qt.io/cgit/qt/qtbase.git/

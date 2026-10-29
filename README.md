@@ -13,6 +13,12 @@ Unity 对象与纹理由 [UnityPy](https://github.com/K0lb3/UnityPy) 解析，�
 
 项目后续会持续维护，随游戏资源变化更新解析方法与说明；不保证每次游戏更新后立即兼容。
 
+## 桌面程序下载
+
+Windows x64 测试版在 [GitHub Releases](https://github.com/PumpkinGrea/svwb-mod-lab/releases) 下载。解压完整的 `SVWBCardMod` 文件夹至游戏目录，运行其中的 `SVWBCardMod.exe`。保留 `_internal`；不需要 Python，不需要启动游戏初始化。
+
+支持本地卡名/编号检索、双图预览、图片裁剪缩放、备份替换、修改管理及恢复。详细步骤见 [使用说明](USER_GUIDE.md)，源码构建见 [构建与发布说明](docs/BUILD.md)。应用和恢复前须退出游戏，并保留游戏目录下的 `SVWBModData/backups/`。
+
 ## 1. 游戏目录与资源组织
 
 以下路径以游戏安装目录为根：
@@ -29,7 +35,7 @@ ShadowverseWB/
     └── Persistent/
         ├── dat/
         │   └── <hash前两字符>/<hash>  运行时下载的资源缓存
-        ├── meta                      内部格式与用途尚未解析
+        ├── meta                      SQLite3MC 加密的本地资源清单数据库
         └── 其他运行时数据
 ```
 
@@ -55,7 +61,7 @@ Windows 简体中文清单地址：
 https://shadowverse-wb.akamaized.net/dl/manifests/Windows/{资源版本}/assetbundle.Chs.manifest
 ```
 
-其他语言后缀为 `Cht`、`Eng`、`Kor`；日语使用不带语言后缀的 `assetbundle.manifest`。资源版本号不同于应用版本号，需提供准确版本；当前未实现自动发现最新版本。
+其他语言后缀为 `Cht`、`Eng`、`Kor`；日语使用不带语言后缀的 `assetbundle.manifest`。资源版本号不同于应用版本号，独立清单下载脚本需要提供准确版本。以下 CDN 流程仅供资源研究使用；桌面编辑器不使用在线清单或社区版本线索。
 
 清单结构为 MessagePack 表目录（TOC）、各表数据和末尾 16 字节 MD5。TOC 记录表名、相对偏移及长度，表起点为 `TOC结束位置 + 相对偏移`。小表直接使用 MessagePack 数组；压缩表使用 Ext(99)，其中先保存 MessagePack 格式的解压大小，再保存 LZ4 数据。
 
@@ -77,6 +83,10 @@ https://shadowverse-wb.akamaized.net/dl/assetbundles/Windows/{hash前两字符}/
 ```
 
 清单只负责描述与定位资源，下载清单不会同时下载全部素材。
+
+桌面编辑器直接只读解析本地 `Persistent/meta`，从本地缓存主数据关联卡名和卡图，完全不依赖在线资源。直接从安装资源 `data.unity3d` 内的 ProjectPrefs 解析数据库读取参数，无需运行游戏或初始化。方法及格式兼容说明见 [本地资源索引实现](docs/LOCAL_RESOURCE_INDEX.md)。
+
+ProjectPrefs 磁盘配置解码另参考 [技术文章](https://linux.do/t/topic/1737538)，实现说明见 [本地资源索引](docs/LOCAL_RESOURCE_INDEX.md)。
 
 ## 3. Unity 资源与卡图解包
 
@@ -110,7 +120,7 @@ base对应字节 = 密文字节 XOR 明文字节 XOR key对应字节
 
 UnityPy 负责解密后的解压、对象解析和纹理解码；资源包压缩与纹理编码是不同层级，并非直接从包中截出 PNG。缺少有效 Unity 版本字符串时，脚本使用 `2022.3.62f2` 回退。
 
-此方法不只用于卡图，也适用于已验证的其他 Unity 包，但不保证兼容全部资源。项目目前负责解析与导出，未实现或验证 Mod 重新封包及游戏内替换。
+此方法不只用于卡图，也适用于已验证的其他 Unity 包，但不保证兼容全部资源。已通过一张普通卡图的重编码、重新封包、加密及游戏内显示验证；不代表全部卡图形态或特殊资源均兼容。
 
 ## 4. 音频提取与事件映射
 
@@ -152,6 +162,30 @@ PCK 是包含多段媒体的容器，WEM 是提取出的音频片段，WAV 是�
 
 ## 6. 项目文件用途
 
+### 卡图编辑器（Windows 本地测试版）
+
+`svwbmod.py` 提供中文名/编号搜索、原图与当前图预览、图片导入、裁剪缩放、备份替换、单张及全部恢复。通过 `build-mod.ps1` 构建后，将整个 `dist/SVWBCardMod/` 文件夹放入游戏目录，运行其中的 `SVWBCardMod.exe`；也可在界面中手动选择游戏目录。不能只复制 exe 而遗漏 `_internal`。
+
+完整操作步骤见 [卡图工坊使用说明](USER_GUIDE.md)，程序内也可点击“使用说明”。启动后直接读取磁盘建立索引，也可点击“刷新本地索引”；全程无需启动游戏。程序仅读取本地清单、主数据和图片，不访问社区、官方 CDN 或下载原图。同组附加纹理只作候选关联，不能保证对应进化等具体形态，使用前应核对预览。
+
+“修改与备份管理”集中展示修改状态、首次备份和最近替换时间、备份大小；支持搜索、状态筛选、单项/多项恢复和恢复全部可恢复项。后台核对备份与当前缓存 SHA-256，恢复前再次复检；外部变化、缺失、备份损坏和与当前索引不匹配的项目不会强行覆盖。旧记录没有完整操作时间时使用文件时间并标为估计，不删除历史备份。版本匹配依据当前已加载索引，游戏更新后应先刷新索引。
+
+默认每次启动检查本地清单和主数据，也可手动刷新，取消了在线版本输入与每日网络检查。索引为 `source=local` 的本地快照，指纹不是 CDN 数字版本号。校验解析全部成功后才原子切换，失败保留已有本地索引，可回退上一份；刷新不修改卡图或备份。快照位于 `SVWBModData/index/`，数据库参数仅在解析期间使用，不再保存初始化参数；不再使用 `references/`。名称语言随本地游戏数据，不联网补充中文；资源未缓存需先由游戏下载。不按客户端版本哈希拦截；配置、数据库或资源格式实际变化时可能需要适配工具。
+
+替换保持纹理尺寸、编码和 mipmap 层级，仅修改纹理流，重新打包后回读校验对象与图像。应用及恢复要求游戏关闭；首次原文件和修改记录保存在游戏目录的 `SVWBModData/backups/`，连续替换不覆盖首次备份。不要删除此目录。纯本地模式无法独立证明当前文件是官方原件：未知指纹首次替换需额外确认将当前文件作为恢复基准，若它已被其他工具修改，只能恢复该本地状态。遇到已知指纹不符或外部修改时停止覆盖。游戏更新后不能强行恢复旧资源。
+
+构建依赖见 `requirements-mod.txt`。构建只需预先准备 `local-keys/bundle-base.bin`；不再需要在线清单、主数据副本或打包搜索 catalog。运行时仍需已安装游戏及本地缓存。运行：
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\build-mod.ps1
+```
+
+Release 为 Windows x64 测试包，包含运行所需的 base 与配置解码格式参数，不包含游戏卡表、提取出的数据库参数或游戏缓存资源。源码不提交本地 `local-keys/`；构建时可使用同版本 Release 中的 `bundle-base.bin`，步骤见 [构建说明](docs/BUILD.md)。Qt/PySide6 及其他依赖的许可文件随包放在 `_internal/app-data/licenses/`，动态库保持独立，可替换兼容版本。
+
+构建脚本临时隔离 DLL 搜索路径，避免把其他软件的同名库（例如 Poppler 的 ICU）混入程序；打包后自动执行启动检查，检查失败则构建不视为验证通过。启动检查报告在忽略目录 `input/mod-build-data/startup-smoke.json`，不代表已经验证新游戏版本的资源兼容性。
+
+### 资源目录与脚本
+
 仓库只分发源代码与文档。以下输入、参数、依赖及导出目录均已忽略，新克隆的仓库不会自带其中内容。Python 脚本依赖 msgpack、lz4、UnityPy、cryptography 等库，音频解码另需 vgmstream。
 
 | 目录或文件 | 用途 |
@@ -178,9 +212,17 @@ PCK 是包含多段媒体的容器，WEM 是提取出的音频片段，WAV 是�
 | `inspect-unity.py` | 查看 Unity 资源包内的对象 |
 | `probe-other-resources.py` | 检查其他 Unity 包及字体资源 |
 | `verify-transform.py` | 通过参考文件对恢复与验证 XOR base |
-| `prepare-card-manifest.py`、`run-card-probe.py` | BYD 单卡处理的辅助脚本，独立解包不必运行 |
 | `.gitignore` | 排除游戏资源、导出文件、依赖、本地参数与 Python 缓存 |
 | `THIRD_PARTY_NOTICES.md` | 第三方代码的版权与许可声明 |
+| `svwbmod.py`、`mod-entry.py`、`modtool/core.py` | Qt 桌面界面、打包启动日志、纹理替换与安全备份恢复 |
+| `modtool/diskprefs.py`、`modtool/localmeta.py` | 磁盘 ProjectPrefs 解码和本地数据库只读访问 |
+| `modtool/management.py`、`modtool/management_ui.py` | 备份清单检查、筛选管理和复检后的选项恢复 |
+| `modtool/jobs.py` | 编辑器与管理页共享的 Qt 后台工作任务 |
+| `modtool/updater.py` | 本地索引刷新、事务式快照与回退，不含网络请求 |
+| `modtool/formats.py`、`modtool/catalog.py` | 本地主数据解析、卡名关联和索引结构校验 |
+| `USER_GUIDE.md` | 程序安装、直接磁盘读取、离线检索替换、恢复与排错说明 |
+| `build-mod.ps1`、`requirements-mod.txt`、`collect-mod-licenses.py` | 安装构建依赖、收集许可声明并打包本地 exe |
+| `tests/` | 在临时缓存副本上测试替换、恢复、错误保护与界面流程 |
 
 部分映射脚本仍使用固定版本、路径或预设卡牌列表，尚非通用全量导出工具；更换资源版本时应检查脚本输入与表字段。
 

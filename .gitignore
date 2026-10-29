@@ -48,3 +48,7 @@ venv/
 .vscode/
 .DS_Store
 Thumbs.db
+
+# Local desktop builds (include local bundle base)
+/build/
+/dist/
