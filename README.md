@@ -2,7 +2,7 @@
 
 本项目的资源解包算法主要参考 **[Hypnos-PD/wbunpacker](https://github.com/Hypnos-PD/wbunpacker)**（MIT）。Unity 资源由 [UnityPy](https://github.com/K0lb3/UnityPy) 解析，第三方声明见 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)。
 
-用于《Shadowverse: Worlds Beyond》的 Windows 卡图编辑器，支持按卡名查找、原图与替换图预览、裁剪缩放、自动备份及恢复。直接读取已安装游戏的本地资源，无需联网或启动游戏初始化。
+用于《Shadowverse: Worlds Beyond》的 Windows 卡图与语音编辑器，支持卡图预览、替换，以及卡牌语音试听、WEM 替换、修改记录和恢复。直接读取已安装游戏的本地资源，无需联网或启动游戏初始化。
 
 ## 下载与安装
 
@@ -41,12 +41,18 @@
 
 游戏更新后先刷新本地索引。工具遇到外部改动、备份不匹配或不支持的格式时会停止覆盖，不要手动把旧备份写回新资源。更多操作与排错见 [完整使用说明](USER_GUIDE.md)。
 
+### 卡牌语音
+
+点击“卡牌语音 · 试听与替换”，按卡名/ID 搜索，选择语言和具体语音。支持原音、当前语音、待替换音频试听，导出原 WEM，以及单条媒体恢复、整包恢复和记录管理。
+
+**可直接导入 WAV、MP3、FLAC、OGG 或 WEM。** 前四种会自动解码、重采样到原音采样率并编码为 Wwise Vorbis WEM；编码结果需通过完整解码和包回读检查。音频最长 120 秒，输入最大 128 MB，输出 WEM 最大 32 MB。原音为单声道时，程序会提示并将单声道复制到左右声道，以匹配当前编码器的游戏兼容配置。共用同一媒体的事件/卡牌会一起受影响。备份独立保存于 `SVWBModData/voice/backups/`，与卡图备份分开管理。游戏内播放效果仍需验证。
+
 ## 资源处理要点
 
 - **资源位置**：`ShadowverseWB_Data/Persistent/meta` 保存资源清单；下载的资源位于 `Persistent/dat/<hash前两字符>/<hash>`，文件通常没有扩展名。
 - **卡名与定位**：从安装文件 `data.unity3d` 读取配置，只读打开本地清单，再通过主数据关联卡名、卡牌 ID、纹理 ID 和缓存路径。
 - **卡图处理**：按清单参数撤销 XOR，解析 Unity 资源包并解码纹理；替换时保留尺寸、纹理编码和 mipmap，重新封包、校验后写入，并保留首次备份。
-- **音频脚本**：从 Wwise PCK 提取 WEM，经 vgmstream 转为 WAV；通过事件表关联卡牌语音。桌面编辑器目前只提供卡图编辑。
+- **音频脚本**：从 Wwise PCK 提取 WEM，经 vgmstream 转为 WAV；通过事件表关联卡牌语音。桌面编辑器可试听和替换兼容 WEM，通过本地声音库映射事件，重建 PCK 偏移与长度，保留其他媒体和声音库。
 
 兼容性依据实际文件格式校验，游戏版本号变化本身不会阻止读取；格式改变仍可能需要更新工具。实现说明见 [本地资源索引](docs/LOCAL_RESOURCE_INDEX.md)，配置解码参考 [ProjectPrefs 技术文章](https://linux.do/t/topic/1737538)。
 

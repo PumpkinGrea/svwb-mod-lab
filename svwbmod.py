@@ -109,9 +109,12 @@ class Window(QMainWindow):
         self.rollback_button.clicked.connect(self.rollback_index)
         self.guide_button = QPushButton("使用说明")
         self.guide_button.clicked.connect(self.show_guide)
+        self.voice_button = QPushButton("卡牌语音 · 试听与替换")
+        self.voice_button.clicked.connect(self.show_voices)
         for control in (self.auto_update, self.initialize_button, self.update_button, self.rollback_button, self.guide_button):
             update_tools.addWidget(control)
         outer.addLayout(update_tools)
+        update_tools.addWidget(self.voice_button)
         splitter = QSplitter()
         outer.addWidget(splitter, 1)
         sidebar = QWidget()
@@ -190,7 +193,7 @@ class Window(QMainWindow):
         self.controls = [self.browse, self.search, self.cached, self.list, self.import_button,
                          self.mode, self.zoom, self.horizontal, self.vertical, self.apply_button,
                          self.restore_button, self.restore_all_button, self.auto_update,
-                         self.initialize_button, self.update_button, self.rollback_button, self.manage_button]
+                         self.initialize_button, self.update_button, self.rollback_button, self.manage_button, self.voice_button]
         self.update_index_note()
         if game_dir:
             self.set_game(game_dir)
@@ -312,6 +315,18 @@ class Window(QMainWindow):
         close.clicked.connect(dialog.accept)
         layout.addWidget(close)
         dialog.exec()
+
+    def show_voices(self):
+        if not self.manager or self.busy:
+            return
+        from modtool.audio_ui import VoiceDialog
+        dialog = VoiceDialog(self)
+        self.management_open = True
+        try:
+            dialog.exec()
+        finally:
+            self.management_open = False
+        dialog.deleteLater()
 
     def show_management(self):
         if not self.manager or self.busy:
@@ -492,6 +507,7 @@ class Window(QMainWindow):
         self.restore_button.setEnabled(ready and self.manager.metadata(self.selected["asset"]) is not None)
         self.restore_all_button.setEnabled(not self.busy and self.manager is not None)
         self.manage_button.setEnabled(not self.busy and self.manager is not None)
+        self.voice_button.setEnabled(not self.busy and self.manager is not None)
         self.update_button.setEnabled(not self.busy and self.manager is not None)
         self.initialize_button.setEnabled(not self.busy and self.manager is not None)
         self.rollback_button.setEnabled(not self.busy and self.manager is not None
@@ -538,6 +554,29 @@ def main():
                 window.filter_cards()
             result = {"catalog_rows": len(window.index["cards"]), "version": window.index["version"],
                       "source": window.index.get("source"), "game_detected": window.manager is not None}
+            from modtool.audio_ui import VoiceDialog
+            from modtool.audio import decoder_path, encoder_path, convert_audio_file, decode_wem, wem_info
+            import math
+            import struct
+            import tempfile
+            import wave
+            result["voice_ui_imported"] = VoiceDialog is not None
+            result["voice_decoder_present"] = decoder_path().is_file()
+            result["voice_encoder_present"] = encoder_path().is_file()
+            with tempfile.TemporaryDirectory(prefix="svwb-audio-smoke-") as temporary:
+                source = Path(temporary) / "smoke.wav"
+                samples = b"".join(struct.pack("<h", int(8000 * math.sin(2 * math.pi * 440 * i / 48000)))
+                                    for i in range(48000))
+                with wave.open(str(source), "wb") as stream:
+                    stream.setnchannels(1)
+                    stream.setsampwidth(2)
+                    stream.setframerate(48000)
+                    stream.writeframes(samples)
+                encoded, info = convert_audio_file(source, {"rate": 48000})
+                if info["channels"] != 2 or info["rate"] != 48000:
+                    raise RuntimeError("Audio conversion smoke test returned incompatible WEM")
+                decode_wem(encoded, Path(temporary) / "roundtrip.wav")
+                result["audio_conversion_verified"] = wem_info(encoded)["codec"] == 0xffff
             if window.manager and window.index["cards"]:
                 card = next(c for c in window.index["cards"] if c["texture_id"] == "109741100")
                 doc, image, _ = window.manager.read(card["asset"])

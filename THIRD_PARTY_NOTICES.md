@@ -52,3 +52,12 @@ https://download.qt.io/official_releases/QtForPython/pyside6/PySide6-6.12.0-src/
 https://download.qt.io/official_releases/qt/6.12/6.12.0/single/
 https://code.qt.io/cgit/pyside/pyside-setup.git/
 https://code.qt.io/cgit/qt/qtbase.git/
+
+
+## vgmstream audio decoder
+
+Voice preview uses the unmodified vgmstream command-line decoder from https://github.com/vgmstream/vgmstream . The decoder and its companion DLLs are distributed together under `_internal/audio-tools/`. Their upstream `COPYING` file is included in that directory. Review that file for component-specific licenses when redistributing.
+
+## Wwise Vorbis encoder
+
+Common audio import uses the standalone encoder from https://github.com/rabbit-smith/wem at commit `c757fe4d2354cbd4d66960179c7715d79b13bae0`, built with `cargo build --release --manifest-path crates/Cargo.toml -p wem-core --features parallel`. The unmodified `wwise-wem.exe` is packaged under `_internal/audio-tools/`. Its MIT and Apache-2.0 license texts and upstream third-party notices are included in `third_party/licenses/` and release dependency notices. The executable is not stored in this source repository. The stereo 48 kHz Wwise 2013.2 profile is used for common audio import; other sample rates may be rejected by this encoder. No Audiokinetic authoring software is required.

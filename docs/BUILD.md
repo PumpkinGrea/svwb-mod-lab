@@ -6,7 +6,10 @@
 
 1. 克隆仓库，在仓库根目录执行后续命令。
 2. 创建 `local-keys` 目录。将同版本 Release 内 `SVWBCardMod/_internal/app-data/bundle-base.bin` 复制到 `local-keys/bundle-base.bin`。它是卡图 XOR 的基础格式参数，不是账号或 API 密钥。也可通过 README 中的参考文件方法自行准备。
-3. 执行：
+3. 准备 Windows x64 音频工具：将 vgmstream 的 `vgmstream-cli.exe`、配套 DLL、`COPYING` 放入 `tools/vgmstream/`；将 Wwise Vorbis 编码器 `wwise-wem.exe` 放入 `tools/wem-encoder/`。两个目录均会打包到 `_internal/audio-tools/`，分别用于试听解码和常见格式导入。许可证文本应与工具来源一同保留。
+4. 执行：
+
+编码器来源为 [rabbit-smith/wem](https://github.com/rabbit-smith/wem)，本次使用提交 `c757fe4d2354cbd4d66960179c7715d79b13bae0`。在该源码目录执行 `cargo build --release --manifest-path crates/Cargo.toml -p wem-core --features parallel`，将 `crates/target/release/wwise-wem.exe` 复制到上述目录。当前使用双声道 48 kHz 配置；其他采样率可能不受支持。
 
 ```powershell
 powershell -NoProfile -ExecutionPolicy Bypass -File .\build-mod.ps1

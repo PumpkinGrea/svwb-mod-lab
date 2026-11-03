@@ -17,12 +17,16 @@ Copy-Item -LiteralPath "USER_GUIDE.md" -Destination "input/mod-build-data/USER_G
 & $buildPython collect-mod-licenses.py
 if ($LASTEXITCODE -ne 0) { throw "License collection failed" }
 $bundleData = Join-Path $PSScriptRoot "input/mod-build-data"
+$audioTools = Join-Path $PSScriptRoot "tools/vgmstream"
+$audioEncoder = Join-Path $PSScriptRoot "tools/wem-encoder"
+if (-not (Test-Path -LiteralPath "$audioTools/vgmstream-cli.exe")) { throw "vgmstream decoder is required for voice playback" }
+if (-not (Test-Path -LiteralPath "$audioEncoder/wwise-wem.exe")) { throw "Wwise Vorbis encoder is required for common audio import" }
 # Do not collect unrelated DLLs from ambient tools (e.g. Poppler's incompatible ICU).
 # Qt expects Windows' system ICU exports, not the version-suffixed third-party ICU.
 $originalBuildPath = $env:PATH
 try {
     $env:PATH = @((Split-Path $buildPython -Parent), [Environment]::SystemDirectory, $env:SystemRoot) -join ';'
-    & $buildPython -m PyInstaller --noconfirm --clean --onedir --windowed --name SVWBCardMod --distpath dist --workpath build --specpath build --add-data "$bundleData/bundle-base.bin;app-data" --add-data "$bundleData/USER_GUIDE.md;app-data" --add-data "$bundleData/THIRD_PARTY_NOTICES.md;app-data" --add-data "$bundleData/licenses;app-data/licenses" --collect-all UnityPy --collect-all etcpak --collect-all astc_encoder --collect-all texture2ddecoder --collect-all fmod_toolkit --collect-all archspec mod-entry.py
+    & $buildPython -m PyInstaller --noconfirm --clean --onedir --windowed --name SVWBCardMod --distpath dist --workpath build --specpath build --add-data "$bundleData/bundle-base.bin;app-data" --add-data "$bundleData/USER_GUIDE.md;app-data" --add-data "$bundleData/THIRD_PARTY_NOTICES.md;app-data" --add-data "$bundleData/licenses;app-data/licenses" --add-data "$audioTools;audio-tools" --add-data "$audioEncoder;audio-tools" --hidden-import PySide6.QtMultimedia --hidden-import _cffi_backend --collect-all cffi --collect-all miniaudio --collect-all UnityPy --collect-all etcpak --collect-all astc_encoder --collect-all texture2ddecoder --collect-all fmod_toolkit --collect-all archspec mod-entry.py
     if ($LASTEXITCODE -ne 0) { throw "Executable build failed" }
 } finally {
     $env:PATH = $originalBuildPath
@@ -37,5 +41,8 @@ if (-not $buildSmoke.WaitForExit(60000)) { throw 'Packaged startup check timed o
 if ($buildSmoke.ExitCode -ne 0) { throw "Packaged startup check failed; see $buildSmokeReport" }
 $smokeResult = Get-Content -LiteralPath $buildSmokeReport -Raw -Encoding UTF8 | ConvertFrom-Json
 if ($smokeResult.error) { throw "Packaged startup check failed: $($smokeResult.error)" }
+if (-not $smokeResult.voice_ui_imported -or -not $smokeResult.voice_decoder_present -or -not $smokeResult.voice_encoder_present -or -not $smokeResult.audio_conversion_verified) {
+    throw "Packaged audio smoke test failed; see $buildSmokeReport"
+}
 Write-Host "Windows test build: dist/SVWBCardMod/SVWBCardMod.exe"
 Write-Host "Offline build: no bundled search catalog or online updater. Bundle base and dependency notices are included."

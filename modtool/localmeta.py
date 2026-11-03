@@ -61,7 +61,7 @@ class LocalReader:
         finally:
             dll.sqlite3_close(db)
 
-    def read(self, key=None):
+    def read(self, key=None, include_audio=False):
         if key is None:
             from .diskprefs import disk_key
             key = disk_key(self.game_dir)
@@ -69,7 +69,8 @@ class LocalReader:
             columns = {r["name"] for r in query("PRAGMA table_info(a)")}
             if not {"n", "h", "l", "e"}.issubset(columns):
                 raise ModError("本地清单结构已改变，需要适配工具。")
-            rows = query("SELECT n,h,l,e FROM a WHERE n LIKE 'Assets/_Wizard2Resources/Card/Textures/%' OR n='Master/mastermemory.bytes' ORDER BY n")
+            audio_clause = " OR n LIKE 'sound/Windows/d/%.pck'" if include_audio else ""
+            rows = query("SELECT n,h,l,e FROM a WHERE n LIKE 'Assets/_Wizard2Resources/Card/Textures/%' OR n='Master/mastermemory.bytes'" + audio_clause + " ORDER BY n")
             roots = query("SELECT n,h FROM c ORDER BY n")
         assets, master = [], None
         for row in rows:
